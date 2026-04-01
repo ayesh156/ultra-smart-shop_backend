@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER & SHOP
+// ==========================================
+
+model Shop {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  logo      String?  @db.Text
+  
+  // Barcode Settings
+  barcodePrefix    String?  // e.g. "USS" or empty for numbers-only
+  barcodeLength    Int      @default(10) // total length of barcode
+  barcodeNumbersOnly Boolean @default(true) // true = digits only, false = alphanumeric
+  
+  // Cashier Permissions (configurable by admin in Settings → Staff Access)
+  cashierCanCreateProducts   Boolean @default(true)
+  cashierCanEditProducts     Boolean @default(false)
+  cashierCanCreateCustomers  Boolean @default(true)
+  cashierCanEditCustomers    Boolean @default(false)
+  cashierCanCreateSuppliers  Boolean @default(true)
+  cashierCanEditSuppliers    Boolean @default(false)
+  cashierCanViewReports      Boolean @default(false)
+  cashierCanAdjustStock      Boolean @default(false)
+  cashierCanCreateWholesale  Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  categories      Category[]
+  brands          Brand[]
+  products        Product[]
+  productVariants ProductVariant[]
+  invoices        Invoice[]
+  stockMovements  StockMovement[]
+  customers       Customer[]
+  suppliers       Supplier[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("ADMIN") // ADMIN, CASHIER
+  isActive  Boolean  @default(true)
+  shopId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop     Shop      @relation(fields: [shopId], references: [id])
+  invoices Invoice[]
+
+  @@index([shopId])
+  @@index([email])
+}
+
+// ==========================================
+// PRODUCT MANAGEMENT
+// ==========================================
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  image       String?  @db.Text
+  shopId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shop     Shop      @relation(fields: [shopId], references: [id])
+  products Product[]
+
+  @@unique([name, shopId])
+  @@index([shopId])
+}
+
+model Brand {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  image       String?  @db.Text
+  shopId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shop     Shop      @relation(fields: [shopId], references: [id])
+  products Product[]
+
+  @@unique([name, shopId])
+  @@index([shopId])
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  sku         String?
+  barcode     String?
+  image       String?  @db.Text
+  
+  // Pricing
+  costPrice     Decimal  @default(0) @db.Decimal(12, 2)
+  sellingPrice  Decimal  @default(0) @db.Decimal(12, 2)
+  wholesalePrice Decimal @default(0) @db.Decimal(12, 2)
+  
+  // Stock
+  stockQuantity Int     @default(0)
+  minStockLevel Int     @default(5)
+  
+  // Relations
+  categoryId String?
+  brandId    String?
+  shopId     String
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category       Category?       @relation(fields: [categoryId], references: [id])
+  brand          Brand?          @relation(fields: [brandId], references: [id])
+  shop           Shop            @relation(fields: [shopId], references: [id])
+  invoiceItems   InvoiceItem[]
+  stockMovements StockMovement[]
+  variants       ProductVariant[]
+
+  @@unique([barcode, shopId])
+  @@unique([sku, shopId])
+  @@index([shopId])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([barcode])
+}
+
+// ==========================================
+// PRODUCT VARIANTS (e.g., Color, Storage, RAM)
+// ==========================================/
+model ProductVariant {
+  id              String   @id @default(uuid())
+  productId       String
+  shopId          String
+  
+  // Variant attributes (e.g., color=Red, storage=256GB, ram=8GB)
+  name            String   // e.g., "Red 256GB"
+  attributes      String   @db.Text  // JSON: { "color": "Red", "storage": "256GB" }
+  
+  // Variant pricing & stock
+  sku             String?
+  barcode         String?
+  costPrice       Decimal  @default(0) @db.Decimal(12, 2)
+  sellingPrice    Decimal  @default(0) @db.Decimal(12, 2)
+  wholesalePrice  Decimal  @default(0) @db.Decimal(12, 2)
+  stockQuantity   Int      @default(0)
+  
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  shop            Shop     @relation(fields: [shopId], references: [id])
+  invoiceItems    InvoiceItem[]
+
+  @@unique([barcode, shopId])
+  @@unique([sku, shopId])
+  @@index([productId])
+  @@index([shopId])
+  @@index([barcode])
+}
+
+// ==========================================
+// STOCK MANAGEMENT
+// ==========================================
+
+model StockMovement {
+  id        String   @id @default(uuid())
+  productId String
+  shopId    String
+  type      String   // IN, OUT, ADJUSTMENT
+  quantity  Int
+  reason    String?  @db.Text
+  reference String?  // Invoice number, GRN number, etc.
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  shop    Shop    @relation(fields: [shopId], references: [id])
+
+  @@index([productId])
+  @@index([shopId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ==========================================
+// INVOICING
+// ==========================================
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String
+  type          String   @default("QUICK") // QUICK, WHOLESALE
+  
+  // Customer info (optional for quick sales)
+  customerName  String?
+  customerPhone String?
+  customerEmail String?
+  
+  // Amounts
+  subtotal      Decimal  @default(0) @db.Decimal(12, 2)
+  discount      Decimal  @default(0) @db.Decimal(12, 2)
+  discountType  String   @default("AMOUNT") // AMOUNT, PERCENTAGE
+  tax           Decimal  @default(0) @db.Decimal(12, 2)
+  total         Decimal  @default(0) @db.Decimal(12, 2)
+  
+  // Payment
+  paidAmount    Decimal  @default(0) @db.Decimal(12, 2)
+  paymentMethod String   @default("CASH") // CASH, CARD, BANK_TRANSFER, MIXED
+  paymentStatus String   @default("PAID") // PAID, PARTIAL, UNPAID
+  
+  // Meta
+  notes         String?  @db.Text
+  status        String   @default("COMPLETED") // COMPLETED, VOID, REFUNDED
+  userId        String
+  shopId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user  User          @relation(fields: [userId], references: [id])
+  shop  Shop          @relation(fields: [shopId], references: [id])
+  items InvoiceItem[]
+
+  @@unique([invoiceNumber, shopId])
+  @@index([shopId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerPhone])
+}
+
+model InvoiceItem {
+  id         String  @id @default(uuid())
+  invoiceId  String
+  productId  String?
+  variantId  String?
+  
+  // Item details (snapshot at time of sale)
+  productName  String
+  barcode      String?
+  quantity     Int      @default(1)
+  unitPrice    Decimal  @db.Decimal(12, 2)
+  discount     Decimal  @default(0) @db.Decimal(12, 2)
+  total        Decimal  @db.Decimal(12, 2)
+  
+  createdAt DateTime @default(now())
+
+  invoice Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+// ==========================================
+// CUSTOMER MANAGEMENT
+// ==========================================
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  email     String?
+  nic       String?  // National ID Card
+  address   String?  @db.Text
+  notes     String?  @db.Text
+  
+  // Credit
+  creditLimit   Decimal  @default(0)  @db.Decimal(12, 2)
+  creditBalance Decimal  @default(0)  @db.Decimal(12, 2)
+  
+  isActive  Boolean  @default(true)
+  shopId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id])
+
+  @@unique([phone, shopId])
+  @@index([shopId])
+  @@index([phone])
+  @@index([nic])
+}
+
+// ==========================================
+// SUPPLIER MANAGEMENT
+// ==========================================
+
+model Supplier {
+  id           String   @id @default(uuid())
+  name         String
+  contactName  String?
+  phone        String?
+  email        String?
+  address      String?  @db.Text
+  notes        String?  @db.Text
+  
+  // Payment
+  paymentTerms String?  // e.g. "Net 30", "COD"
+  
+  isActive  Boolean  @default(true)
+  shopId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id])
+
+  @@unique([name, shopId])
+  @@index([shopId])
+  @@index([phone])
+}
