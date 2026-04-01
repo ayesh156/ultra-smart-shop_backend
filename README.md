@@ -81,3 +81,30 @@ npm install
 npm run build
 pm2 restart uss-api
 ```
+
+---
+
+## 🗑️ Data Reset (After Demo — Before Real Use)
+
+After demoing the system, run this to wipe all sample data while keeping shop settings and user accounts intact:
+
+```bash
+cd backend
+npx tsx prisma/reset-data.ts
+```
+
+### What gets removed vs preserved:
+
+| Removed | Preserved |
+|---------|-----------|
+| Products, Product Variants | Shop (name, address, phone, email, barcode settings) |
+| Categories, Brands | All User accounts (passwords, roles, active status) |
+| Invoices, Invoice Items | |
+| Stock Movements | |
+| Customers, Suppliers | |
+
+> **Note:** Run this command from inside the `backend` folder. On the Contabo server, the path would be `/opt/ultra-smart-shop/backend`.
+> ```bash
+> cd /opt/ultra-smart-shop/backend
+> npx tsx prisma/reset-data.ts
+> ```
