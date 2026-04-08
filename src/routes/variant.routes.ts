@@ -11,6 +11,20 @@ import { sensitiveRateLimiter } from '../middleware/rateLimiter.js';
 const router = Router();
 router.use(protect, requireShop);
 
+// GET all variants for this shop
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthRequest;
+    const shopId = authReq.user!.shopId!;
+    const variants = await prisma.productVariant.findMany({
+      where: { shopId, isActive: true },
+      include: { product: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: variants });
+  } catch (error) { next(error); }
+});
+
 // GET all variants for a product
 router.get('/product/:productId', async (req: Request, res: Response, next: NextFunction) => {
   try {

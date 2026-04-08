@@ -23,6 +23,7 @@ model Shop {
   barcodePrefix    String?  // e.g. "USS" or empty for numbers-only
   barcodeLength    Int      @default(10) // total length of barcode
   barcodeNumbersOnly Boolean @default(true) // true = digits only, false = alphanumeric
+  lastBarcode      String?  // last generated barcode for auto-increment
   
   // Cashier Permissions (configurable by admin in Settings → Staff Access)
   cashierCanCreateProducts   Boolean @default(true)

@@ -50,23 +50,32 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// GET product by barcode (also checks variant barcodes)
+// GET product by barcode or short code (also checks variant barcodes/short codes)
 router.get('/barcode/:barcode', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authReq = req as AuthRequest;
     const shopId = authReq.user!.shopId!;
+    const code = req.params.barcode;
 
-    // First check products
+    // First check products by barcode
     const product = await prisma.product.findFirst({
-      where: { barcode: req.params.barcode, shopId },
+      where: { barcode: code, shopId },
       include: { category: { select: { id: true, name: true } }, brand: { select: { id: true, name: true } } },
     });
 
     if (product) return res.json({ success: true, data: product });
 
-    // Then check variants
+    // Then check products by short code (sku)
+    const productBySku = await prisma.product.findFirst({
+      where: { sku: code, shopId },
+      include: { category: { select: { id: true, name: true } }, brand: { select: { id: true, name: true } } },
+    });
+
+    if (productBySku) return res.json({ success: true, data: productBySku });
+
+    // Then check variants by barcode
     const variant = await prisma.productVariant.findFirst({
-      where: { barcode: req.params.barcode, shopId },
+      where: { barcode: code, shopId },
       include: { product: { include: { category: { select: { id: true, name: true } }, brand: { select: { id: true, name: true } } } } },
     });
 
@@ -91,7 +100,101 @@ router.get('/barcode/:barcode', async (req: Request, res: Response, next: NextFu
       });
     }
 
-    return res.status(404).json({ success: false, message: 'Product not found with this barcode' });
+    // Then check variants by short code (sku)
+    const variantBySku = await prisma.productVariant.findFirst({
+      where: { sku: code, shopId },
+      include: { product: { include: { category: { select: { id: true, name: true } }, brand: { select: { id: true, name: true } } } } },
+    });
+
+    if (variantBySku) {
+      return res.json({
+        success: true,
+        data: {
+          id: variantBySku.productId,
+          name: `${variantBySku.product.name} — ${variantBySku.name}`,
+          barcode: variantBySku.barcode,
+          sku: variantBySku.sku,
+          costPrice: variantBySku.costPrice,
+          sellingPrice: variantBySku.sellingPrice,
+          wholesalePrice: variantBySku.wholesalePrice,
+          stockQuantity: variantBySku.stockQuantity,
+          category: variantBySku.product.category,
+          brand: variantBySku.product.brand,
+          isVariant: true,
+          variantId: variantBySku.id,
+          variantName: variantBySku.name,
+        },
+      });
+    }
+
+    return res.status(404).json({ success: false, message: 'Product not found with this barcode or short code' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CHECK barcode availability (products + variants)
+router.get('/barcode-availability/:barcode', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthRequest;
+    const shopId = authReq.user!.shopId!;
+    const barcode = String(req.params.barcode || '').trim();
+    const excludeProductId = typeof req.query.excludeProductId === 'string' ? req.query.excludeProductId : undefined;
+
+    if (!barcode) {
+      return res.status(400).json({ success: false, message: 'Barcode is required' });
+    }
+
+    const existingProduct = await prisma.product.findFirst({
+      where: {
+        shopId,
+        barcode,
+        ...(excludeProductId ? { id: { not: excludeProductId } } : {}),
+      },
+      select: { id: true, name: true },
+    });
+
+    if (existingProduct) {
+      return res.json({
+        success: true,
+        data: {
+          available: false,
+          source: 'product',
+          productId: existingProduct.id,
+          productName: existingProduct.name,
+        },
+      });
+    }
+
+    const existingVariant = await prisma.productVariant.findFirst({
+      where: {
+        shopId,
+        barcode,
+        ...(excludeProductId ? { productId: { not: excludeProductId } } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        productId: true,
+        product: { select: { name: true } },
+      },
+    });
+
+    if (existingVariant) {
+      return res.json({
+        success: true,
+        data: {
+          available: false,
+          source: 'variant',
+          variantId: existingVariant.id,
+          variantName: existingVariant.name,
+          productId: existingVariant.productId,
+          productName: existingVariant.product.name,
+        },
+      });
+    }
+
+    return res.json({ success: true, data: { available: true } });
   } catch (error) {
     next(error);
   }

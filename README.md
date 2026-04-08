@@ -58,6 +58,7 @@ Since the backend and frontend are now in separate repositories, you will clone 
    npm install
    npx prisma generate
    npx prisma db push
+   npx prisma db seed
    npm run build
    ```
 
