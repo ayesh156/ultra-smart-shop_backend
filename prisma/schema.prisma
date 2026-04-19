@@ -48,6 +48,7 @@ model Shop {
   stockMovements  StockMovement[]
   customers       Customer[]
   suppliers       Supplier[]
+  cashDrawerSessions CashDrawerSession[]
 }
 
 model User {
@@ -63,6 +64,7 @@ model User {
 
   shop     Shop      @relation(fields: [shopId], references: [id])
   invoices Invoice[]
+  cashDrawerSessions CashDrawerSession[]
 
   @@index([shopId])
   @@index([email])
@@ -125,7 +127,8 @@ model Product {
   categoryId String?
   brandId    String?
   shopId     String
-  
+
+  isCustom  Boolean  @default(false)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -260,9 +263,10 @@ model InvoiceItem {
   barcode      String?
   quantity     Int      @default(1)
   unitPrice    Decimal  @db.Decimal(12, 2)
+  costPrice    Decimal  @default(0) @db.Decimal(12, 2)
   discount     Decimal  @default(0) @db.Decimal(12, 2)
   total        Decimal  @db.Decimal(12, 2)
-  
+
   createdAt DateTime @default(now())
 
   invoice Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -330,4 +334,29 @@ model Supplier {
   @@unique([name, shopId])
   @@index([shopId])
   @@index([phone])
+}
+
+// ==========================================
+// CASH DRAWER
+// ==========================================
+
+model CashDrawerSession {
+  id            String   @id @default(uuid())
+  shopId        String
+  userId        String
+  openedAt      DateTime @default(now())
+  closedAt      DateTime?
+  startingCash  Decimal  @default(0) @db.Decimal(12, 2)
+  expectedCash  Decimal  @default(0) @db.Decimal(12, 2)
+  actualCash    Decimal  @default(0) @db.Decimal(12, 2)
+  difference    Decimal  @default(0) @db.Decimal(12, 2)
+  notes         String?  @db.Text
+  status        String   @default("OPEN") // OPEN, CLOSED
+
+  shop Shop @relation(fields: [shopId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([shopId])
+  @@index([userId])
+  @@index([status])
 }

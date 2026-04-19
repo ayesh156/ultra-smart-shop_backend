@@ -39,6 +39,7 @@ import supplierRoutes from './routes/supplier.routes.js';
 import shopRoutes from './routes/shop.routes.js';
 import variantRoutes from './routes/variant.routes.js';
 import userRoutes from './routes/user.routes.js';
+import cashdrawerRoutes from './routes/cashdrawer.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -120,6 +121,7 @@ app.use(`${API}/suppliers`, supplierRoutes);
 app.use(`${API}/shop`, shopRoutes);
 app.use(`${API}/variants`, variantRoutes);
 app.use(`${API}/users`, userRoutes);
+app.use(`${API}/cash-drawer`, cashdrawerRoutes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

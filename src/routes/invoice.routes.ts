@@ -89,41 +89,84 @@ router.post('/', sensitiveRateLimiter, validateInvoice, async (req: Request, res
 
     const invoiceNumber = await generateInvoiceNumber(shopId, type);
 
-    // Calculate totals
-    let subtotal = 0;
-    const invoiceItems: Array<{
-      productId?: string;
-      variantId?: string;
-      productName: string;
-      barcode?: string;
-      quantity: number;
-      unitPrice: number;
-      discount: number;
-      total: number;
-    }> = [];
-
-    for (const item of items) {
-      const itemTotal = (item.unitPrice * item.quantity) - (item.discount || 0);
-      subtotal += itemTotal;
-      invoiceItems.push({
-        productId: item.productId || undefined,
-        variantId: item.variantId || undefined,
-        productName: item.productName,
-        barcode: item.barcode,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discount: item.discount || 0,
-        total: itemTotal,
-      });
-    }
-
-    const discountAmount = discountType === 'PERCENTAGE' ? (subtotal * discount / 100) : discount;
-    const total = subtotal - discountAmount + tax;
-    const paid = paidAmount ?? total;
-    const paymentStatus = paid >= total ? 'PAID' : paid > 0 ? 'PARTIAL' : 'UNPAID';
-
     // Create invoice with items in transaction
     const invoice = await prisma.$transaction(async (tx) => {
+      // Calculate totals and handle custom products
+      let subtotal = 0;
+      const invoiceItems: Array<{
+        productId?: string;
+        variantId?: string;
+        productName: string;
+        barcode?: string;
+        quantity: number;
+        unitPrice: number;
+        costPrice: number;
+        discount: number;
+        total: number;
+      }> = [];
+
+      for (const item of items) {
+        let finalProductId = item.productId || undefined;
+        let costPrice = item.costPrice || 0;
+
+        if (!finalProductId) {
+          // Create custom product on the fly
+          const newProduct = await tx.product.create({
+            data: {
+              name: item.productName,
+              shopId,
+              sellingPrice: item.unitPrice,
+              wholesalePrice: item.unitPrice,
+              costPrice: item.costPrice || 0,
+              isCustom: true,
+              stockQuantity: item.quantity, // Give it initial stock so it goes back to 0 after sale
+            }
+          });
+          
+          // Initial stock movement for custom product
+          await tx.stockMovement.create({
+            data: {
+              productId: newProduct.id,
+              shopId,
+              type: 'IN',
+              quantity: item.quantity,
+              reason: 'Initial stock for custom product',
+              reference: 'AUTO',
+            }
+          });
+
+          finalProductId = newProduct.id;
+        } else {
+          // Fetch existing product to get accurate cost price at the time of sale
+          if (item.variantId) {
+            const variant = await tx.productVariant.findUnique({ where: { id: item.variantId } });
+            if (variant) costPrice = Number(variant.costPrice);
+          } else {
+            const prod = await tx.product.findUnique({ where: { id: finalProductId } });
+            if (prod) costPrice = Number(prod.costPrice);
+          }
+        }
+
+        const itemTotal = (item.unitPrice * item.quantity) - (item.discount || 0);
+        subtotal += itemTotal;
+        invoiceItems.push({
+          productId: finalProductId,
+          variantId: item.variantId || undefined,
+          productName: item.productName,
+          barcode: item.barcode,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          costPrice: costPrice,
+          discount: item.discount || 0,
+          total: itemTotal,
+        });
+      }
+
+      const discountAmount = discountType === 'PERCENTAGE' ? (subtotal * discount / 100) : discount;
+      const total = subtotal - discountAmount + tax;
+      const paid = paidAmount ?? total;
+      const paymentStatus = paid >= total ? 'PAID' : paid > 0 ? 'PARTIAL' : 'UNPAID';
+
       const inv = await tx.invoice.create({
         data: {
           invoiceNumber,
