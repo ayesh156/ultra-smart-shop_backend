@@ -21,25 +21,25 @@ for (const envPath of envPaths) {
   }
 }
 
-import { errorHandler } from './middleware/errorHandler.js';
-import { notFound } from './middleware/notFound.js';
-import { apiRateLimiter } from './middleware/rateLimiter.js';
-import { sanitizeRequestBody } from './middleware/validation.js';
-import { corsConfig } from './config/security.js';
-import { connectDB } from './lib/prisma.js';
+import { errorHandler } from './middleware/errorHandler.ts';
+import { notFound } from './middleware/notFound.ts';
+import { apiRateLimiter } from './middleware/rateLimiter.ts';
+import { sanitizeRequestBody } from './middleware/validation.ts';
+import { corsConfig } from './config/security.ts';
+import { connectDB } from './lib/prisma.ts';
 
-import authRoutes from './routes/auth.routes.js';
-import productRoutes from './routes/product.routes.js';
-import categoryRoutes from './routes/category.routes.js';
-import brandRoutes from './routes/brand.routes.js';
-import invoiceRoutes from './routes/invoice.routes.js';
-import stockRoutes from './routes/stock.routes.js';
-import customerRoutes from './routes/customer.routes.js';
-import supplierRoutes from './routes/supplier.routes.js';
-import shopRoutes from './routes/shop.routes.js';
-import variantRoutes from './routes/variant.routes.js';
-import userRoutes from './routes/user.routes.js';
-import cashdrawerRoutes from './routes/cashdrawer.routes.js';
+import authRoutes from './routes/auth.routes.ts';
+import productRoutes from './routes/product.routes.ts';
+import categoryRoutes from './routes/category.routes.ts';
+import brandRoutes from './routes/brand.routes.ts';
+import invoiceRoutes from './routes/invoice.routes.ts';
+import stockRoutes from './routes/stock.routes.ts';
+import customerRoutes from './routes/customer.routes.ts';
+import supplierRoutes from './routes/supplier.routes.ts';
+import shopRoutes from './routes/shop.routes.ts';
+import variantRoutes from './routes/variant.routes.ts';
+import userRoutes from './routes/user.routes.ts';
+import cashdrawerRoutes from './routes/cashdrawer.routes.ts';
 
 const app = express();
 const PORT = process.env.PORT || 3002;

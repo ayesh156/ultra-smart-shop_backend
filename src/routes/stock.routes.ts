@@ -1,8 +1,8 @@
-import { Router, Request, Response, NextFunction } from 'express';
-import { prisma } from '../lib/prisma.js';
-import { protect, requireShop, authorize } from '../middleware/auth.js';
-import type { AuthRequest } from '../middleware/auth.js';
-import { sensitiveRateLimiter } from '../middleware/rateLimiter.js';
+import { Router, type Request, type Response, type NextFunction } from 'express';
+import { prisma } from '../lib/prisma.ts';
+import { protect, requireShop, authorize } from '../middleware/auth.ts';
+import type { AuthRequest } from '../middleware/auth.ts';
+import { sensitiveRateLimiter } from '../middleware/rateLimiter.ts';
 
 const router = Router();
 router.use(protect, requireShop);
