@@ -21,7 +21,7 @@ for (const envPath of envPaths) {
   }
 }
 
-import { errorHandler } from './middleware/errorHandler';
+import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound';
 import { apiRateLimiter } from './middleware/rateLimiter';
 import { sanitizeRequestBody } from './middleware/validation';
