@@ -1,9 +1,9 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
-import { prisma } from '../lib/prisma';
-import { protect, requireShop, authorize } from '../middleware/auth';
-import type { AuthRequest } from '../middleware/auth';
-import { validateInvoice } from '../middleware/validation';
-import { sensitiveRateLimiter } from '../middleware/rateLimiter';
+import { prisma } from '../lib/prisma.js';
+import { protect, requireShop, authorize } from '../middleware/auth.js';
+import type { AuthRequest } from '../middleware/auth.js';
+import { validateInvoice } from '../middleware/validation.js';
+import { sensitiveRateLimiter } from '../middleware/rateLimiter.js';
 import { Prisma } from '@prisma/client';
 
 const router = Router();

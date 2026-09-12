@@ -4,11 +4,11 @@
  */
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
-import { prisma } from '../lib/prisma';
-import { protect, requireShop, authorize } from '../middleware/auth';
-import type { AuthRequest } from '../middleware/auth';
-import { sensitiveRateLimiter } from '../middleware/rateLimiter';
-import { passwordConfig } from '../config/security';
+import { prisma } from '../lib/prisma.js';
+import { protect, requireShop, authorize } from '../middleware/auth.js';
+import type { AuthRequest } from '../middleware/auth.js';
+import { sensitiveRateLimiter } from '../middleware/rateLimiter.js';
+import { passwordConfig } from '../config/security.js';
 
 const router = Router();
 // 🔒 Apply authentication to ALL routes

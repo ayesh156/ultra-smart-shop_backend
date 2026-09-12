@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { prisma } from './lib/prisma';
+import { prisma } from './lib/prisma.js';
 
 async function monitorDatabase() {
   console.log('🔄 Connecting to Database Monitor for Ultra Smart Shop...');

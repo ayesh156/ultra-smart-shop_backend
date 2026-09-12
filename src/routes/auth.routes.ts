@@ -1,11 +1,11 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/prisma';
-import { jwtConfig, passwordConfig } from '../config/security';
-import { authRateLimiter, sensitiveRateLimiter } from '../middleware/rateLimiter';
-import { protect } from '../middleware/auth';
-import type { AuthRequest } from '../middleware/auth';
+import { prisma } from '../lib/prisma.js';
+import { jwtConfig, passwordConfig } from '../config/security.js';
+import { authRateLimiter, sensitiveRateLimiter } from '../middleware/rateLimiter.js';
+import { protect } from '../middleware/auth.js';
+import type { AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 

@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/prisma';
-import { AppError } from './errorHandler';
-import { jwtConfig } from '../config/security';
-import type { AuthRequest, AuthUser } from '../types/express';
+import { prisma } from '../lib/prisma.js';
+import { AppError } from './errorHandler.js';
+import { jwtConfig } from '../config/security.js';
+import type { AuthRequest, AuthUser } from '../types/express.js';
 
 export type { AuthRequest };
 

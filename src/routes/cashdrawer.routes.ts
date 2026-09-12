@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
-import { prisma } from '../lib/prisma';
-import { protect, requireShop } from '../middleware/auth';
-import type { AuthRequest } from '../middleware/auth';
+import { prisma } from '../lib/prisma.js';
+import { protect, requireShop } from '../middleware/auth.js';
+import type { AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 router.use(protect, requireShop);
