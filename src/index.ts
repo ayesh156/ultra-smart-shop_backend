@@ -21,28 +21,56 @@ for (const envPath of envPaths) {
   }
 }
 
-import { errorHandler } from './middleware/errorHandler.ts';
-import { notFound } from './middleware/notFound.ts';
-import { apiRateLimiter } from './middleware/rateLimiter.ts';
-import { sanitizeRequestBody } from './middleware/validation.ts';
-import { corsConfig } from './config/security.ts';
-import { connectDB } from './lib/prisma.ts';
+import { errorHandler } from './middleware/errorHandler';
+import { notFound } from './middleware/notFound';
+import { apiRateLimiter } from './middleware/rateLimiter';
+import { sanitizeRequestBody } from './middleware/validation';
+import { corsConfig } from './config/security';
+import { connectDB, prisma } from './lib/prisma';
 
-import authRoutes from './routes/auth.routes.ts';
-import productRoutes from './routes/product.routes.ts';
-import categoryRoutes from './routes/category.routes.ts';
-import brandRoutes from './routes/brand.routes.ts';
-import invoiceRoutes from './routes/invoice.routes.ts';
-import stockRoutes from './routes/stock.routes.ts';
-import customerRoutes from './routes/customer.routes.ts';
-import supplierRoutes from './routes/supplier.routes.ts';
-import shopRoutes from './routes/shop.routes.ts';
-import variantRoutes from './routes/variant.routes.ts';
-import userRoutes from './routes/user.routes.ts';
-import cashdrawerRoutes from './routes/cashdrawer.routes.ts';
+import authRoutes from './routes/auth.routes';
+import productRoutes from './routes/product.routes';
+import categoryRoutes from './routes/category.routes';
+import brandRoutes from './routes/brand.routes';
+import invoiceRoutes from './routes/invoice.routes';
+import stockRoutes from './routes/stock.routes';
+import customerRoutes from './routes/customer.routes';
+import supplierRoutes from './routes/supplier.routes';
+import shopRoutes from './routes/shop.routes';
+import variantRoutes from './routes/variant.routes';
+import userRoutes from './routes/user.routes';
+import cashdrawerRoutes from './routes/cashdrawer.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+
+let isShuttingDown = false;
+
+const shutdown = async (reason: string, exitCode: number) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`Shutting down (${reason})...`);
+
+  try {
+    await prisma.$disconnect();
+  } catch (error) {
+    console.error('Failed to disconnect Prisma:', error);
+    exitCode = 1;
+  } finally {
+    process.exit(exitCode);
+  }
+};
+
+process.once('SIGINT', () => { void shutdown('SIGINT', 0); });
+process.once('SIGTERM', () => { void shutdown('SIGTERM', 0); });
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+  void shutdown('unhandled promise rejection', 1);
+});
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+  void shutdown('uncaught exception', 1);
+});
 
 // VPS Reverse Proxy trust proxy
 app.set('trust proxy', 1);
@@ -148,7 +176,7 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error('Failed to start server:', error);
-    process.exit(1);
+    void shutdown('startup failure', 1);
   }
 };
 
