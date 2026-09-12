@@ -22,24 +22,25 @@ for (const envPath of envPaths) {
 }
 
 import { errorHandler } from './middleware/errorHandler.js';
-import { notFound } from './middleware/notFound';
-import { apiRateLimiter } from './middleware/rateLimiter';
-import { sanitizeRequestBody } from './middleware/validation';
-import { corsConfig } from './config/security';
-import { connectDB, prisma } from './lib/prisma';
+import { notFound } from './middleware/notFound.js';
+import { apiRateLimiter } from './middleware/rateLimiter.js';
+import { sanitizeRequestBody } from './middleware/validation.js';
+import { corsConfig } from './config/security.js';
+import { connectDB, prisma } from './lib/prisma.js';
 
-import authRoutes from './routes/auth.routes';
-import productRoutes from './routes/product.routes';
-import categoryRoutes from './routes/category.routes';
-import brandRoutes from './routes/brand.routes';
-import invoiceRoutes from './routes/invoice.routes';
-import stockRoutes from './routes/stock.routes';
-import customerRoutes from './routes/customer.routes';
-import supplierRoutes from './routes/supplier.routes';
-import shopRoutes from './routes/shop.routes';
-import variantRoutes from './routes/variant.routes';
-import userRoutes from './routes/user.routes';
-import cashdrawerRoutes from './routes/cashdrawer.routes';
+// Routes
+import authRoutes from './routes/auth.routes.js';
+import productRoutes from './routes/product.routes.js';
+import categoryRoutes from './routes/category.routes.js';
+import brandRoutes from './routes/brand.routes.js';
+import invoiceRoutes from './routes/invoice.routes.js';
+import stockRoutes from './routes/stock.routes.js';
+import customerRoutes from './routes/customer.routes.js';
+import supplierRoutes from './routes/supplier.routes.js';
+import shopRoutes from './routes/shop.routes.js';
+import variantRoutes from './routes/variant.routes.js';
+import userRoutes from './routes/user.routes.js';
+import cashdrawerRoutes from './routes/cashdrawer.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
