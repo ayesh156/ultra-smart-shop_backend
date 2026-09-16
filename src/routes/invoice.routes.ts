@@ -291,9 +291,13 @@ router.patch('/:id/void', authorize('ADMIN'), sensitiveRateLimiter, async (req: 
         }
       }
 
+      // Mark invoice as voided and sync paymentStatus to avoid report discrepancies
       return tx.invoice.update({
         where: { id: req.params.id },
-        data: { status: 'VOID' },
+        data: { 
+          status: 'VOID',
+          paymentStatus: 'VOID'
+        },
         include: { items: true },
       });
     });
