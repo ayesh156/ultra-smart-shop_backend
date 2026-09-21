@@ -1,5 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientValidationError,
+} from '@prisma/client/runtime/library';
 
 export class AppError extends Error {
   statusCode: number;
@@ -33,7 +36,7 @@ const friendlyModelNames: Record<string, string> = {
 };
 
 function handlePrismaError(
-  err: Prisma.PrismaClientKnownRequestError
+  err: PrismaClientKnownRequestError
 ): { statusCode: number; message: string } {
   switch (err.code) {
     case 'P2002': {
@@ -137,7 +140,7 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  if (err instanceof PrismaClientKnownRequestError) {
     const { statusCode, message } = handlePrismaError(err);
 
     if (statusCode === 500) {
@@ -152,7 +155,7 @@ export const errorHandler = (
     return;
   }
 
-  if (err instanceof Prisma.PrismaClientValidationError) {
+  if (err instanceof PrismaClientValidationError) {
     res.status(400).json({
       success: false,
       message:
